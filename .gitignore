@@ -1,0 +1,5 @@
+.vscode
+build-bin
+bazel-*
+libs/SDL2*
+SDL2wrapper*
