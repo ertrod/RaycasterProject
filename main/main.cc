@@ -1,5 +1,8 @@
 #include <iostream>
 
+#define SDL2WRAPPER_FONT
+#define SDL2WRAPPER_IMAGE
+
 #include "libs/SDL2/include/SDL.h"
 #include "SDL2wrapper/include/SDL2wrapper.h"
 
@@ -62,14 +65,23 @@ const int MAP_WIDTH = 6;
 const int MAP_HEIGHT = 6;
 
 
-int map[7][6] = {
-    {1, 2, 1, 2, 1, 1},
-    {1, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 2},
-    {2, 0, 0, 0, 0, 1},
-    {1, 0, 3, 2, 0, 2},
-    {1, 0, 0, 3, 0, 1},
-    {1, 2, 1, 1, 2, 1},
+int map[16][16] = {
+    {1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 4, 0, 4, 4, 4, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1, 0, 1},
+    {1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 3, 3, 3, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 3, 0, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1},
 };
 
 const int SCREEN_WIDTH = 640;
@@ -98,77 +110,77 @@ void InitPlayer()
 
 const int MAX_RAY_LENGTH = 24;
 
-Intersection ClosestHitPoint(vector2f ray_dir, vector2f start_pos)
+Intersection ClosestHitPoint(vector2f rayDir, vector2f startPos)
 {
-    int mapx = static_cast<int>(start_pos.x);
-    int mapy = static_cast<int>(start_pos.y);
+    int mapX = static_cast<int>(startPos.x);
+    int mapY = static_cast<int>(startPos.y);
     
-    double dirx = ray_dir.x;
-    double diry = ray_dir.y;
+    double dirX = rayDir.x;
+    double dirY = rayDir.y;
 
-    double deltax = (dirx == 0) ? 1e30 : std::abs(1 / dirx);
-    double deltay = (diry == 0) ? 1e30 : std::abs(1 / diry);
+    double deltaX = (dirX == 0) ? 1e30 : std::abs(1 / dirX);
+    double deltaY = (dirY == 0) ? 1e30 : std::abs(1 / dirY);
 
-    double rayx = 0;
-    double rayy = 0;
+    double rayX = 0;
+    double rayY = 0;
 
     double distance = 0.f;
 
-    int sx = 0;
-    int sy = 0;
+    int stepX = 0;
+    int stepY = 0;
 
-    if (dirx > 0)
+    if (dirX > 0)
     {
-        sx = 1;
-        rayx = (double(mapx) + 1.f - start_pos.x) * deltax;
+        stepX = 1;
+        rayX = (double(mapX) + 1.f - startPos.x) * deltaX;
     }
     else
     {
-        sx = -1;
-        rayx = (start_pos.x - mapx) * deltax;
+        stepX = -1;
+        rayX = (startPos.x - mapX) * deltaX;
     }
-    if (diry > 0)
+    if (dirY > 0)
     {
-        sy = 1;
-        rayy = (double(mapy) + 1.f - start_pos.y) * deltay;
+        stepY = 1;
+        rayY = (double(mapY) + 1.f - startPos.y) * deltaY;
     }
     else
     {
-        sy = -1;
-        rayy = (start_pos.y - mapy) * deltay;
+        stepY = -1;
+        rayY = (startPos.y - mapY) * deltaY;
     } 
+
     TILE_SIDE side;
     while (distance < MAX_RAY_LENGTH)
     {
-        bool goX = rayx < rayy;
+        bool goX = rayX < rayY;
         if (goX)
         {
-            mapx += sx;
-            distance = rayx;
-            rayx += deltax;
+            mapX += stepX;
+            distance = rayX;
+            rayX += deltaX;
             side = X;
         }
         else
         {
-            mapy += sy;
-            distance = rayy;
-            rayy += deltay;
+            mapY += stepY;
+            distance = rayY;
+            rayY += deltaY;
             side = Y;
         }
-        if (map[mapx][mapy])
+        if (map[mapX][mapY])
         {
             break;
         }
     }
-    return Intersection{mapx, mapy, distance, side};
+    return Intersection{mapX, mapY, distance, side};
 }
 
-double DistanceToPoint(vector2f start_point, vector2f end_point)
+double DistanceToPoint(vector2f startPoint, vector2f endPoint)
 {
-    double squared_distance = std::pow(start_point.x - end_point.x, 2) + std::pow(start_point.y - end_point.y, 2);
-    return std::sqrt(squared_distance);
+    double squaredDistance = std::pow(startPoint.x - endPoint.x, 2) + std::pow(startPoint.y - endPoint.y, 2);
+    return std::sqrt(squaredDistance);
 }
-
 
 int main(int args, char* argv[])
 {
@@ -177,6 +189,7 @@ int main(int args, char* argv[])
     try
     {
         sdl2::SDL sdl(SDL_INIT_VIDEO);
+        sdl2::SDLTTF sdlttf;
         sdl2::Window window(
             "raycast", 
             SDL_WINDOWPOS_UNDEFINED, 
@@ -186,10 +199,14 @@ int main(int args, char* argv[])
         );
         sdl2::Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-        int rot_angle = 3;
+        sdl2::Font font("main/data/Vera.ttf", 20);
+
+        sdl2::Surface text_surface = font.RenderText_Solid("00.00", {255, 255, 255});
+        sdl2::Texture text = CreateTexture(renderer, text_surface);
+        int rotAngle = 3;
         double halfHeigth = tan(DegToRad(FOV) / 2);
         double halfWidth = (double(PLANE_WIDTH) / double(PLANE_HEIGHT)) * halfHeigth;
-        int rect_width = SCREEN_WIDTH / PLANE_WIDTH;
+        int rectWidth = SCREEN_WIDTH / PLANE_WIDTH;
 
         SDL_Event e;
         bool quit = false;
@@ -215,7 +232,7 @@ int main(int args, char* argv[])
                             break;
                         case SDLK_d:
                         {
-                            int opposite_angle = 360 - rot_angle;
+                            int opposite_angle = 360 - rotAngle;
                             player.direction = {
                                 (player.direction.x * CosTable[opposite_angle] - player.direction.y * SinTable[opposite_angle]),
                                 (player.direction.x * SinTable[opposite_angle] + player.direction.y * CosTable[opposite_angle])
@@ -225,8 +242,8 @@ int main(int args, char* argv[])
                         case SDLK_a:
                         {
                             player.direction = {
-                                (player.direction.x * CosTable[rot_angle] - player.direction.y * SinTable[rot_angle]),
-                                (player.direction.x * SinTable[rot_angle] + player.direction.y * CosTable[rot_angle])
+                                (player.direction.x * CosTable[rotAngle] - player.direction.y * SinTable[rotAngle]),
+                                (player.direction.x * SinTable[rotAngle] + player.direction.y * CosTable[rotAngle])
                             };
                             break;
                         }
@@ -255,19 +272,20 @@ int main(int args, char* argv[])
             {
                 double ray_angle = angle + (FOV/2) - (i * FOV/PLANE_WIDTH);
                 double offset = ((i * 2.) / (PLANE_WIDTH - 1.) - 1.);
-                float add_x = right.x * offset;
-                float add_y = right.y * offset;
+
+                float addX = right.x * offset;
+                float addY = right.y * offset;
                 vector2f ray_dir = {
-                    static_cast<float>(forward.x + add_x),
-                    static_cast<float>(forward.y + add_y)
+                    static_cast<float>(forward.x + addX),
+                    static_cast<float>(forward.y + addY)
                 };
 
                 Intersection wall = ClosestHitPoint(ray_dir, player.pos);
                 int slice_size = WALL_HEIGHT / (wall.distance*TILE_SIZE) * DISTANCE_TO_PLANE;
 
-                int start_rect_x = i * rect_width;
+                int start_rect_x = i * rectWidth;
                 int start_rect_y = (SCREEN_HEIGHT/2 - slice_size/2); 
-                sdl2::Rect rect(start_rect_x, start_rect_y, rect_width, slice_size);
+                sdl2::Rect rect(start_rect_x, start_rect_y, rectWidth, slice_size);
 
 
                 switch (map[wall.x][wall.y])
@@ -280,6 +298,10 @@ int main(int args, char* argv[])
                         break;
                     case 3:
                         renderer.SetDrawColor(255, 0, 0);
+                        break;
+                    case 4:
+                        renderer.SetDrawColor(0, 255, 0);
+                        break;
                 }
 
                 if (wall.side == Y)
@@ -289,15 +311,21 @@ int main(int args, char* argv[])
                 }
                 
                 renderer.FillRect(rect);
+
+                text.Update(std::nullopt, font.RenderText_Solid(std::to_string(wall.distance), {255, 255, 255}));
             }
 
             // SDL_Delay(100);
+
+            renderer.Copy(text, std::nullopt, {0, 0});
+
+
             renderer.Present();
         }
     }
     catch (sdl2::SDLException e)
     {
-        std::cerr << e.SDLFunction() << e.SDLError() << std::endl;
+        std::cerr << e.SDLFunction() << " " << e.SDLError() << std::endl;
     }
 
     return 0;

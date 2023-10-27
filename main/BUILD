@@ -7,4 +7,5 @@ cc_binary(
         "//libs:sdl2",
         "//SDL2wrapper:SDL2wrapper",
     ],
+    data = ["data/Vera.ttf"]
 )
