@@ -99,7 +99,7 @@ const int FOV = 60;
 
 const int DISTANCE_TO_PLANE = (PLANE_WIDTH / 2) / std::tan(DegToRad(FOV/2));
 
-const double PLAYER_VELOCITY = 0.1; 
+const double PLAYER_VELOCITY = 0.05;
 Player player;
 
 void InitPlayer()
@@ -224,23 +224,6 @@ int main(int argc, char* argv[])
                 {
                     quit = true;
                 }
-                if (e.type == SDL_KEYDOWN)
-                {
-                    switch(e.key.keysym.sym)
-                    {
-                        case SDLK_w:
-                            player.pos.x += player.direction.x * PLAYER_VELOCITY;
-                            player.pos.y += player.direction.y * PLAYER_VELOCITY;
-                            break;
-                        case SDLK_s:
-                            player.pos.x -= player.direction.x * PLAYER_VELOCITY;
-                            player.pos.y -= player.direction.y * PLAYER_VELOCITY;
-                            break;
-                        case SDLK_q:
-                            quit = true;
-                            break;
-                    }
-                }
                 if (e.type == SDL_MOUSEMOTION)
                 {
                     if (e.motion.xrel < 0) // left
@@ -262,7 +245,38 @@ int main(int argc, char* argv[])
                         };
                     }
                 }
+                if (e.type == SDL_KEYDOWN)
+                {
+                    switch(e.key.keysym.sym)
+                    {
 
+                        case SDLK_q:
+                            quit = true;
+                            break;
+                    }
+                }
+            }
+
+            const Uint8* keyStates = SDL_GetKeyboardState(nullptr);
+            if (keyStates[SDL_SCANCODE_W]) 
+            {
+                player.pos.x += player.direction.x * PLAYER_VELOCITY;
+                player.pos.y += player.direction.y * PLAYER_VELOCITY;
+            }
+            if (keyStates[SDL_SCANCODE_S])
+            {
+                player.pos.x -= player.direction.x * PLAYER_VELOCITY;
+                player.pos.y -= player.direction.y * PLAYER_VELOCITY;
+            }
+            if (keyStates[SDL_SCANCODE_D])
+            {
+                player.pos.x += player.direction.y * PLAYER_VELOCITY;
+                player.pos.y -= player.direction.x * PLAYER_VELOCITY;
+            }
+            if (keyStates[SDL_SCANCODE_A])
+            {
+                player.pos.x -= player.direction.y * PLAYER_VELOCITY;
+                player.pos.y += player.direction.x * PLAYER_VELOCITY;
             }
 
             renderer.SetDrawColor(50, 50, 100);
