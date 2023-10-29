@@ -84,8 +84,8 @@ int map[16][16] = {
     {1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1},
 };
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;
 
 const int WALL_HEIGHT = 64;
 const int PLAYER_HEIGHT = 32;
@@ -99,7 +99,7 @@ const int FOV = 60;
 
 const int DISTANCE_TO_PLANE = (PLANE_WIDTH / 2) / std::tan(DegToRad(FOV/2));
 
-const double PLAYER_VELOCITY = 0.05; 
+const double PLAYER_VELOCITY = 0.1; 
 Player player;
 
 void InitPlayer()
@@ -182,7 +182,7 @@ double DistanceToPoint(vector2f startPoint, vector2f endPoint)
     return std::sqrt(squaredDistance);
 }
 
-int main(int args, char* argv[])
+int main(int argc, char* argv[])
 {
     InitPlayer();
     InitTables();
@@ -199,14 +199,20 @@ int main(int args, char* argv[])
         );
         sdl2::Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-        sdl2::Font font("main/data/Vera.ttf", 20);
+        sdl2::Font font("data/fonts/Vera.ttf", 20);
 
         sdl2::Surface text_surface = font.RenderText_Solid("00.00", {255, 255, 255});
         sdl2::Texture text = CreateTexture(renderer, text_surface);
-        int rotAngle = 3;
+        int rotAngle = 2;
+        int rotationSpeed = 4;
         double halfHeigth = tan(DegToRad(FOV) / 2);
         double halfWidth = (double(PLANE_WIDTH) / double(PLANE_HEIGHT)) * halfHeigth;
         int rectWidth = SCREEN_WIDTH / PLANE_WIDTH;
+
+        float cosAddition = (1 - CosTable[1]) / 10;
+        float sinAddition = (SinTable[1]) / 10;
+        
+        SDL_SetRelativeMouseMode(SDL_TRUE);
 
         SDL_Event e;
         bool quit = false;
@@ -230,25 +236,33 @@ int main(int args, char* argv[])
                             player.pos.x -= player.direction.x * PLAYER_VELOCITY;
                             player.pos.y -= player.direction.y * PLAYER_VELOCITY;
                             break;
-                        case SDLK_d:
-                        {
-                            int opposite_angle = 360 - rotAngle;
-                            player.direction = {
-                                (player.direction.x * CosTable[opposite_angle] - player.direction.y * SinTable[opposite_angle]),
-                                (player.direction.x * SinTable[opposite_angle] + player.direction.y * CosTable[opposite_angle])
-                            };
+                        case SDLK_q:
+                            quit = true;
                             break;
-                        }
-                        case SDLK_a:
-                        {
-                            player.direction = {
-                                (player.direction.x * CosTable[rotAngle] - player.direction.y * SinTable[rotAngle]),
-                                (player.direction.x * SinTable[rotAngle] + player.direction.y * CosTable[rotAngle])
-                            };
-                            break;
-                        }
                     }
                 }
+                if (e.type == SDL_MOUSEMOTION)
+                {
+                    if (e.motion.xrel < 0) // left
+                    {
+                        float cosRotation = CosTable[1] + (cosAddition * (10 - rotationSpeed));
+                        float sinRotation = SinTable[1] - (sinAddition * (10 - rotationSpeed));
+                        player.direction = {
+                            (player.direction.x * cosRotation - player.direction.y * sinRotation),
+                            (player.direction.x * sinRotation + player.direction.y * cosRotation)
+                        };
+                    }
+                    else if (e.motion.xrel > 0) // right
+                    {
+                        float cosRotation = CosTable[359] - (cosAddition * (10 - rotationSpeed));
+                        float sinRotation = SinTable[359] + (sinAddition * (10 - rotationSpeed));
+                        player.direction = {
+                            (player.direction.x * cosRotation - player.direction.y * sinRotation),
+                            (player.direction.x * sinRotation + player.direction.y * cosRotation)
+                        };
+                    }
+                }
+
             }
 
             renderer.SetDrawColor(50, 50, 100);
@@ -325,7 +339,7 @@ int main(int args, char* argv[])
     }
     catch (sdl2::SDLException e)
     {
-        std::cerr << e.SDLFunction() << " " << e.SDLError() << std::endl;
+        std::cerr << e.what() << std::endl;
     }
 
     return 0;
