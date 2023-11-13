@@ -86,16 +86,19 @@ int map[16][16] = {
     {1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1},
 };
 
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
+const int WINDOW_WIDTH = 1280;
+const int WINDOW_HEIGHT = 720;
+
+const int SCREEN_WIDTH = 641;
+const int SCREEN_HEIGHT = 360;
 
 const int WALL_HEIGHT = 64;
 const int PLAYER_HEIGHT = 32;
 
 const int TILE_SIZE = 64;
 
-const int PLANE_WIDTH = SCREEN_WIDTH / 2;
-const int PLANE_HEIGHT = SCREEN_HEIGHT / 2;
+const int PLANE_WIDTH = SCREEN_WIDTH/2;
+const int PLANE_HEIGHT = SCREEN_HEIGHT;
 
 const int FOV = 60;
 
@@ -107,7 +110,7 @@ Player player;
 void InitPlayer()
 {
     player.pos = {1.5, 1.5};
-    player.direction = {-1, 1};
+    player.direction = {1, -1};
 }
 
 const int MAX_RAY_LENGTH = 24;
@@ -170,6 +173,7 @@ Intersection ClosestHitPoint(vector2f rayDir, vector2f startPos)
             rayY += deltaY;
             side = Y;
         }
+        // for correct "3d" visualisation x and y need to be swapped
         if (map[mapX][mapY])
         {
             break;
@@ -200,7 +204,7 @@ int main(int argc, char* argv[])
             "raycast", 
             SDL_WINDOWPOS_UNDEFINED, 
             SDL_WINDOWPOS_UNDEFINED,
-            SCREEN_WIDTH, SCREEN_HEIGHT,
+            WINDOW_WIDTH, WINDOW_HEIGHT,
             0
         );
         sdl2::Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
@@ -212,19 +216,31 @@ int main(int argc, char* argv[])
 
         sdl2::Texture screenMap = sdl2::CreateTexture(renderer,
             SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+            SCREEN_HEIGHT, SCREEN_WIDTH
+        );
+
+        sdl2::Texture floor = sdl2::CreateTexture(renderer,
+            SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
             SCREEN_WIDTH, SCREEN_HEIGHT
         );
 
         sdl2::Surface brickWall("data/brick_wall.png");
         sdl2::Texture brickWallTexture = sdl2::CreateTexture(renderer, brickWall);
+        
+        sdl2::Surface wolf("data/wolftextures.png");
+        sdl2::Texture wolfTextures = sdl2::CreateTexture(renderer, 
+            SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
+            wolf.Width(), wolf.Height()
+        );
+        wolfTextures.Update(std::nullopt, wolf);
 
         sdl2::Font font("data/fonts/Vera.ttf", 20);
         sdl2::Surface text_surface = font.RenderText_Solid("00.00", {255, 255, 255});
         sdl2::Texture text = CreateTexture(renderer, text_surface);
 
-        sdl2::Font pointFont("data/fonts/Vera.ttf", 10);
-        sdl2::Surface pointSurface = pointFont.RenderText_Solid("                              ", {255, 255, 255});
-        sdl2::Texture pointText = CreateTexture(renderer, pointSurface);
+        // sdl2::Font pointFont("data/fonts/Vera.ttf", 10);
+        // sdl2::Surface pointSurface = pointFont.RenderText_Solid("                              ", {255, 255, 255});
+        // sdl2::Texture pointText = CreateTexture(renderer, pointSurface);
 
         int rotAngle = 2;
         int rotationSpeed = 4;
@@ -310,8 +326,13 @@ int main(int argc, char* argv[])
             renderer.Clear();
 
             renderer.Target(screenMap);
-            renderer.SetDrawColor(50, 50, 100);
             renderer.Clear();
+            renderer.Target();
+
+            renderer.Target(floor);
+            renderer.SetDrawColor(255, 255, 255);
+            renderer.Clear();
+            renderer.Target();
 
 
             renderer.SetDrawColor(255, 255, 255);
@@ -330,8 +351,8 @@ int main(int argc, char* argv[])
 
             // 2d raycast
             renderer.Target(screenMap);
-            int playerXoffset = SCREEN_WIDTH / 2;
-            int playerYoffset = SCREEN_HEIGHT / 2;
+            int playerXoffset = SCREEN_HEIGHT / 2;
+            int playerYoffset = SCREEN_WIDTH / 2;
             int playerX = static_cast<int>(player.pos.x + playerXoffset);
             int playerY = static_cast<int>(player.pos.y + playerYoffset);
             int playerW = 20;
@@ -343,11 +364,11 @@ int main(int argc, char* argv[])
                 playerX, playerY,
                 playerW, playerH
             );
-            renderer.DrawRect(player_rect);
+            renderer.FillRect(player_rect);
             // draw player direction;
             renderer.SetDrawColor(255, 0, 0);
             renderer.DrawLine(playerX, playerY, 
-                playerX + player.direction.x * playerW, 
+                playerX + player.direction.x * playerW,
                 playerY + player.direction.y * playerH
             );
 
@@ -363,7 +384,9 @@ int main(int argc, char* argv[])
                     static_cast<float>(forward.x + addX),
                     static_cast<float>(forward.y + addY)
                 };
+                int beta = RadToDeg(atan2(ray_dir.y, ray_dir.x));
 
+                // wall casting
                 Intersection wall = ClosestHitPoint(ray_dir, player.pos);
                 int slice_size = WALL_HEIGHT / (wall.distance*TILE_SIZE) * DISTANCE_TO_PLANE;
 
@@ -377,17 +400,6 @@ int main(int argc, char* argv[])
                 );
                 renderer.DrawRect(ray_rect);
 
-                if (i % 100 == 0)
-                {
-                    float wy = wall.fy - std::floor(wall.fy);
-                    wy *= TILE_SIZE;
-                    float wx = wall.fx - std::floor(wall.fx);
-                    wx *= TILE_SIZE;
-                    pointText.Update(sdl2::Rect(0, 0, pointText.Width(), pointText.Height()), pointFont.RenderText_Solid(
-                        "(" + std::to_string(wx) + ";" + std::to_string(wy) + ")", {255, 255, 255}
-                    ));
-                    renderer.Copy(pointText, std::nullopt, {rayX+2, rayY+2});
-                }
                 // 3d raycast
                 renderer.Target(screen);
                 int start_rect_x = i * rectWidth;
@@ -411,43 +423,58 @@ int main(int argc, char* argv[])
                 }
                 
                 text.Update(std::nullopt, font.RenderText_Solid(std::to_string(wallX), {255, 255, 255}));
-                
-                sdl2::Rect srcrect(static_cast<int>(wallX), 0, 1, brickWallTexture.Height());
-                renderer.Copy(brickWallTexture, srcrect, rect);
-            
-                // flat raycast
-                // switch (map[wall.x][wall.y])
-                // {
-                //     case 1:
-                //         renderer.SetDrawColor(255, 255, 255);
-                //         break;
-                //     case 2:
-                //         renderer.SetDrawColor(255, 255, 0);
-                //         break;
-                //     case 3:
-                //         renderer.SetDrawColor(255, 0, 0);
-                //         break;
-                //     case 4:
-                //         renderer.SetDrawColor(0, 255, 0);
-                //         break;
-                // }
 
-                // if (wall.side == Y)
-                // {
-                //     sdl2::Color c = renderer.GetDrawColor();
-                //     renderer.SetDrawColor(c.r/2, c.g/2, c.b/2);
-                // }
-                
-                // renderer.FillRect(rect);
+                // texture sheet
+                wallX += map[wall.x][wall.y] * TILE_SIZE - TILE_SIZE;
+                sdl2::Rect srcrect(static_cast<int>(wallX), 0, 1, wolfTextures.Height());
+                renderer.Copy(wolfTextures, srcrect, rect);
 
-                // text.Update(std::nullopt, font.RenderText_Solid(std::to_string(wall.distance), {255, 255, 255}));
+                // floor casting
+                {
+                    int floorTextureX = 6 * TILE_SIZE; // 6 texture from wolftextures.png
+                    int halfScreen = PLANE_HEIGHT / 2;
+
+                    int px = rect.x;
+                    for (int py = rect.y + rect.h; py < screen.Height(); py++)
+                    {
+
+                        int p = py - (screen.Height() / 2);
+                        float rowDist = static_cast<float>(DISTANCE_TO_PLANE) * static_cast<float>(PLAYER_HEIGHT) / static_cast<float>(p);
+
+                        float floorX = player.pos.x + ray_dir.x * rowDist / TILE_SIZE;
+                        float floorY = player.pos.y + ray_dir.y * rowDist / TILE_SIZE;
+                        
+                        int cellX = static_cast<int>(floorX);
+                        int cellY = static_cast<int>(floorY);
+
+                        int tx = (int(floorTextureX + TILE_SIZE * (floorX - cellX)));
+                        int ty = (int(TILE_SIZE * (floorY - cellY)));
+                        
+                        sdl2::Rect src(tx, ty, rect.w, 1);
+                        sdl2::Rect dst(rect.x, py, rect.w, 1);
+                        renderer.Copy(wolfTextures, src, dst);
+                    }
+                }
             }
-
-            // SDL_Delay(100);
 
             renderer.Target();
 
-            renderer.Copy(screen, std::nullopt, {0, 0});
+            renderer.Copy(floor, std::nullopt, {0, 0});
+            renderer.Copy(screen, std::nullopt, sdl2::Rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT), 0, std::nullopt);
+
+            
+            int mapWidth = WINDOW_WIDTH / 6;
+            int mapHeight = WINDOW_HEIGHT / 6;
+            sdl2::Rect playerRect = sdl2::Rect::FromCenter(screenMap.Width()/2, screenMap.Height()/2, screenMap.Width()/2, screenMap.Height()/2);
+            renderer.Copy(screenMap, 
+                playerRect,
+                sdl2::Rect(0, WINDOW_WIDTH - mapHeight, mapWidth, mapHeight),
+                angle+91, 
+                sdl2::Point(mapWidth/2, mapHeight/2),
+                SDL_FLIP_HORIZONTAL
+            );
+            renderer.Target();
+
             renderer.Copy(text, std::nullopt, {0, 0});
 
             renderer.Present();
