@@ -432,9 +432,11 @@ int main(int argc, char* argv[])
                 // floor casting
                 {
                     int floorTextureX = 6 * TILE_SIZE; // 6 texture from wolftextures.png
+                    int ceilTextureX = 7 * TILE_SIZE;
                     int halfScreen = PLANE_HEIGHT / 2;
 
                     int px = rect.x;
+
                     for (int py = rect.y + rect.h; py < screen.Height(); py++)
                     {
 
@@ -447,12 +449,21 @@ int main(int argc, char* argv[])
                         int cellX = static_cast<int>(floorX);
                         int cellY = static_cast<int>(floorY);
 
-                        int tx = (int(floorTextureX + TILE_SIZE * (floorX - cellX)));
-                        int ty = (int(TILE_SIZE * (floorY - cellY)));
+                        int ftx = (int(floorTextureX + TILE_SIZE * (floorX - cellX)));
+                        int fty = (int(TILE_SIZE * (floorY - cellY)));
+
+                        int ctx = (int(ceilTextureX + TILE_SIZE * (floorX - cellX)));
                         
-                        sdl2::Rect src(tx, ty, rect.w, 1);
-                        sdl2::Rect dst(rect.x, py, rect.w, 1);
-                        renderer.Copy(wolfTextures, src, dst);
+                        sdl2::Rect srcf(ftx, fty, rect.w, 1);
+                        sdl2::Rect dstf(rect.x, py, rect.w, 1);
+
+                        int cy = screen.Height() - py;
+                        
+                        sdl2::Rect srcc(ctx, fty, rect.w, 1);
+                        sdl2::Rect dstc(rect.x, cy, rect.w, 1);
+
+                        renderer.Copy(wolfTextures, srcc, dstc);
+                        renderer.Copy(wolfTextures, srcf, dstf);
                     }
                 }
             }
