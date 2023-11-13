@@ -8,7 +8,8 @@ cc_binary(
         "//SDL2wrapper:SDL2wrapper",
     ],
     data = [
-        "data/Vera.ttf",
+        "data/fonts/Vera.ttf",
         "data/brick_wall.png",
+        "data/wolftextures.png",
     ]
 )
