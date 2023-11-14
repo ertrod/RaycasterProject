@@ -89,8 +89,8 @@ int map[16][16] = {
 const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
 
-const int SCREEN_WIDTH = 641;
-const int SCREEN_HEIGHT = 360;
+const int SCREEN_WIDTH = 400;
+const int SCREEN_HEIGHT = 225;
 
 const int WALL_HEIGHT = 64;
 const int PLAYER_HEIGHT = 32;
@@ -219,34 +219,33 @@ int main(int argc, char* argv[])
             SCREEN_HEIGHT, SCREEN_WIDTH
         );
 
-        sdl2::Texture floor = sdl2::CreateTexture(renderer,
-            SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
-            SCREEN_WIDTH, SCREEN_HEIGHT
-        );
-
-        sdl2::Surface brickWall("data/brick_wall.png");
-        sdl2::Texture brickWallTexture = sdl2::CreateTexture(renderer, brickWall);
-        
         sdl2::Surface wolf("data/wolftextures.png");
         sdl2::Texture wolfTextures = sdl2::CreateTexture(renderer, 
             SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
             wolf.Width(), wolf.Height()
         );
         wolfTextures.Update(std::nullopt, wolf);
+        wolfTextures.BlendMode(SDL_BLENDMODE_BLEND);
 
         sdl2::Font font("data/fonts/Vera.ttf", 20);
         sdl2::Surface text_surface = font.RenderText_Solid("00.00", {255, 255, 255});
         sdl2::Texture text = CreateTexture(renderer, text_surface);
-
-        // sdl2::Font pointFont("data/fonts/Vera.ttf", 10);
-        // sdl2::Surface pointSurface = pointFont.RenderText_Solid("                              ", {255, 255, 255});
-        // sdl2::Texture pointText = CreateTexture(renderer, pointSurface);
 
         int rotAngle = 2;
         int rotationSpeed = 4;
         double halfHeigth = tan(DegToRad(FOV) / 2);
         double halfWidth = (double(PLANE_WIDTH) / double(PLANE_HEIGHT)) * halfHeigth;
         int rectWidth = SCREEN_WIDTH / PLANE_WIDTH;
+
+        int floorTextureX = 6 * TILE_SIZE; // 7 texture from wolftextures.png
+        int ceilTextureX = 7 * TILE_SIZE; // 8 texture from wolftextures.png
+        int halfScreen = PLANE_HEIGHT / 2;
+
+        int fogMaxDistance = 7;
+        bool fogEnabled = true;
+        int fogColorStep = 255 / fogMaxDistance;
+        int minSliceSizeWithFog = WALL_HEIGHT / static_cast<float>(fogMaxDistance * TILE_SIZE) * DISTANCE_TO_PLANE;
+        int minYWithFogToBlur = screen.Height()/2 + minSliceSizeWithFog/2 - 1;
 
         float cosAddition = (1 - CosTable[1]) / 10;
         float sinAddition = (SinTable[1]) / 10;
@@ -329,11 +328,6 @@ int main(int argc, char* argv[])
             renderer.Clear();
             renderer.Target();
 
-            renderer.Target(floor);
-            renderer.SetDrawColor(255, 255, 255);
-            renderer.Clear();
-            renderer.Target();
-
 
             renderer.SetDrawColor(255, 255, 255);
             int angle = RadToDeg(atan2(player.direction.y, player.direction.x));
@@ -388,7 +382,7 @@ int main(int argc, char* argv[])
 
                 // wall casting
                 Intersection wall = ClosestHitPoint(ray_dir, player.pos);
-                int slice_size = WALL_HEIGHT / (wall.distance*TILE_SIZE) * DISTANCE_TO_PLANE;
+
 
                 // 2d raycast
                 renderer.Target(screenMap);
@@ -402,76 +396,112 @@ int main(int argc, char* argv[])
 
                 // 3d raycast
                 renderer.Target(screen);
-                int start_rect_x = i * rectWidth;
-                int start_rect_y = (SCREEN_HEIGHT/2 - slice_size/2); 
-                sdl2::Rect rect(start_rect_x, start_rect_y, rectWidth, slice_size);
 
+                int slice_size = 0;
+                if (fogEnabled)
+                {
+                    int ci = 255 - fogColorStep * wall.distance;
+                    if (wall.distance < fogMaxDistance)
+                    {
+                        slice_size = WALL_HEIGHT / (wall.distance * TILE_SIZE) * DISTANCE_TO_PLANE;
+                    }
+                    else
+                    {
+                        slice_size = WALL_HEIGHT / static_cast<float>(fogMaxDistance * TILE_SIZE) * DISTANCE_TO_PLANE;
+                        ci = 0;
+                    }
+                    
+                    // set color intensity
+                    wolfTextures.SetColorMod(ci, ci, ci);
+                }
+                else
+                {
+                    slice_size = WALL_HEIGHT / (wall.distance*TILE_SIZE) * DISTANCE_TO_PLANE;
+                }
+
+                int start_rect_x = i * rectWidth;
+                int start_rect_y = (SCREEN_HEIGHT/2 - slice_size/2);
+
+                sdl2::Rect rect(start_rect_x, start_rect_y, rectWidth, slice_size);
+                
                 float wallX = 0.;
                 float wy = wall.fy - std::floor(wall.fy);
                 float wx = wall.fx - std::floor(wall.fx);
                 if (wall.side == X)
                 {
-                    brickWallTexture.SetColorMod(128, 128, 128);
+                    // wolfTextures.SetColorMod(128, 128, 128);
                     wy *= TILE_SIZE;
                     wallX = wy;
                 }
                 else
                 {
-                    brickWallTexture.SetColorMod(255, 255, 255);
+                    // wolfTextures.SetColorMod(255, 255, 255);
                     wx *= TILE_SIZE;
                     wallX = wx;
                 }
-                
-                text.Update(std::nullopt, font.RenderText_Solid(std::to_string(wallX), {255, 255, 255}));
+                if (i == PLANE_WIDTH/2)
+                {
+                    text.Update(std::nullopt, font.RenderText_Solid(std::to_string(wall.distance), {255, 255, 255}));
+                }
 
-                // texture sheet
-                wallX += map[wall.x][wall.y] * TILE_SIZE - TILE_SIZE;
+                wallX += map[wall.x][wall.y] * TILE_SIZE - TILE_SIZE; // get proper texture according on what wall
                 sdl2::Rect srcrect(static_cast<int>(wallX), 0, 1, wolfTextures.Height());
                 renderer.Copy(wolfTextures, srcrect, rect);
+                wolfTextures.SetColorMod(255, 255, 255);
 
                 // floor casting
+                int px = rect.x;
+                
+                int fcFogBlurRangeMax = minYWithFogToBlur + 100/static_cast<int>(fogMaxDistance);
+
+                float fcFogColorStep = 255. / (fcFogBlurRangeMax - minYWithFogToBlur);
+
+                for (int py = rect.y + rect.h; py < screen.Height(); py++)
                 {
-                    int floorTextureX = 6 * TILE_SIZE; // 6 texture from wolftextures.png
-                    int ceilTextureX = 7 * TILE_SIZE;
-                    int halfScreen = PLANE_HEIGHT / 2;
+                    int p = py - (screen.Height() / 2);
+                    float rowDist = static_cast<float>(DISTANCE_TO_PLANE) * static_cast<float>(PLAYER_HEIGHT) / static_cast<float>(p);
 
-                    int px = rect.x;
+                    float floorX = player.pos.x + ray_dir.x * rowDist / TILE_SIZE;
+                    float floorY = player.pos.y + ray_dir.y * rowDist / TILE_SIZE;
+                    
+                    int cellX = static_cast<int>(floorX);
+                    int cellY = static_cast<int>(floorY);
 
-                    for (int py = rect.y + rect.h; py < screen.Height(); py++)
+                    int ftx = (int(floorTextureX + TILE_SIZE * (floorX - cellX)));
+                    int fty = (int(TILE_SIZE * (floorY - cellY)));
+
+                    int ctx = (int(ceilTextureX + TILE_SIZE * (floorX - cellX)));
+
+                    if (fogEnabled)
                     {
-
-                        int p = py - (screen.Height() / 2);
-                        float rowDist = static_cast<float>(DISTANCE_TO_PLANE) * static_cast<float>(PLAYER_HEIGHT) / static_cast<float>(p);
-
-                        float floorX = player.pos.x + ray_dir.x * rowDist / TILE_SIZE;
-                        float floorY = player.pos.y + ray_dir.y * rowDist / TILE_SIZE;
-                        
-                        int cellX = static_cast<int>(floorX);
-                        int cellY = static_cast<int>(floorY);
-
-                        int ftx = (int(floorTextureX + TILE_SIZE * (floorX - cellX)));
-                        int fty = (int(TILE_SIZE * (floorY - cellY)));
-
-                        int ctx = (int(ceilTextureX + TILE_SIZE * (floorX - cellX)));
-                        
-                        sdl2::Rect srcf(ftx, fty, rect.w, 1);
-                        sdl2::Rect dstf(rect.x, py, rect.w, 1);
-
-                        int cy = screen.Height() - py;
-                        
-                        sdl2::Rect srcc(ctx, fty, rect.w, 1);
-                        sdl2::Rect dstc(rect.x, cy, rect.w, 1);
-
-                        renderer.Copy(wolfTextures, srcc, dstc);
-                        renderer.Copy(wolfTextures, srcf, dstf);
+                        int color = 255;
+                        if (py >= minYWithFogToBlur && py <= fcFogBlurRangeMax)
+                        {
+                            color = fcFogColorStep * (py - minYWithFogToBlur);
+                        }
+                        wolfTextures.SetColorMod(color, color, color);
                     }
+                    
+                    sdl2::Rect srcf(ftx, fty, rect.w, 1);
+                    sdl2::Rect dstf(rect.x, py, rect.w, 1);
+
+                    int cy = screen.Height() - py;
+
+                    sdl2::Rect srcc(ctx, fty, rect.w, 1);
+                    sdl2::Rect dstc(rect.x, cy, rect.w, 1);
+
+                    // wolfTextures.SetColorMod(128, 128, 128);
+                    renderer.Copy(wolfTextures, srcc, dstc);
+                    // wolfTextures.SetColorMod(255, 255, 255);
+                    renderer.Copy(wolfTextures, srcf, dstf);
                 }
             }
+            wolfTextures.SetColorMod(255, 255, 255);
 
             renderer.Target();
 
-            renderer.Copy(floor, std::nullopt, {0, 0});
             renderer.Copy(screen, std::nullopt, sdl2::Rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT), 0, std::nullopt);
+            // renderer.Copy(floorCeil, std::nullopt, sdl2::Rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT), 0, std::nullopt);
 
             
             int mapWidth = WINDOW_WIDTH / 6;
