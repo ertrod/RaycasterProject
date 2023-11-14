@@ -9,7 +9,6 @@ cc_binary(
     ],
     data = [
         "data/fonts/Vera.ttf",
-        "data/brick_wall.png",
         "data/wolftextures.png",
     ]
 )
