@@ -12,3 +12,16 @@ cc_binary(
         "data/wolftextures.png",
     ]
 )
+
+cc_binary(
+    name = "raycaster",
+    srcs = ["raycaster.cc"],
+    deps = [
+        "//libs:sdl2",
+        "//SDL2wrapper:SDL2wrapper",
+    ],
+    data = [
+        "data/fonts/Vera.ttf",
+        "data/wolftextures.png",
+    ]
+)
