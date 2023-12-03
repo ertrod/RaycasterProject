@@ -227,6 +227,44 @@ int DeltaTime(int previous, int offset)
     return (clock() - previous) + offset;
 }
 
+// fog variables
+bool fogEnabled = true;
+int fogMaxDistance = 5;
+float fogColorStep = 1. / fogMaxDistance;
+int fogRed = 10;
+int fogGreen = 50;
+int fogBlue = 30;
+
+void SetColorToFog(sdl2::Texture& tex, float distance, bool isEntity = false)
+{
+    if (fogEnabled)
+    {
+        if (distance <= fogMaxDistance)
+        {
+            float realColorPart = 1. - distance * fogColorStep;
+            float fogColorPart = (1. - realColorPart);
+            int realColor = realColorPart * 255;
+
+            int r = realColor + fogRed * fogColorPart;
+            int g = realColor + fogGreen * fogColorPart;
+            int b = realColor + fogBlue * fogColorPart;
+            int a = realColor;
+            tex.SetColorMod(r, g, b);
+            if (!isEntity)
+                tex.AlphaMod(a);
+            else
+            {
+                if (realColor < 200)
+                    tex.AlphaMod(realColor + 50);
+            }
+        }
+        else
+        {
+            tex.SetColorMod(fogRed, fogGreen, fogBlue);
+            tex.AlphaMod(0);
+        }
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -241,7 +279,7 @@ int main(int argc, char* argv[])
             SDL_WINDOWPOS_UNDEFINED, 
             SDL_WINDOWPOS_UNDEFINED,
             SCREEN_WIDTH, SCREEN_HEIGHT,
-            0
+            SDL_WINDOW_OPENGL
         );
         sdl2::Renderer renderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
@@ -258,6 +296,7 @@ int main(int argc, char* argv[])
         sdl2::Texture wolfTextures = sdl2::CreateTexture(renderer, "data/wolftextures.png");
         int floorTexture = 6 * TILE_SIZE;
         int ceilTexture = 7 * TILE_SIZE;
+        wolfTextures.BlendMode(SDL_BLENDMODE_BLEND);
 
         sdl2::Texture entityTexture = sdl2::CreateTexture(renderer, "data/enemy.png");
 
@@ -268,6 +307,7 @@ int main(int argc, char* argv[])
         // time variables
         int prevTime = clock();
         int offset = 0;
+
 
         // Sprites
         std::vector<std::pair<int, float>> entities(SPRITE_COUNT);
@@ -286,7 +326,7 @@ int main(int argc, char* argv[])
             prevTime = clock();
 
             renderer.Target(screen);
-            renderer.SetDrawColor(255, 255, 255);
+            renderer.SetDrawColor(fogRed, fogGreen, fogBlue);
             renderer.Clear();
 
             for (int i = 0; i <= PLANE_WIDTH; i++)
@@ -311,7 +351,6 @@ int main(int argc, char* argv[])
                 if (std::abs(y) >= std::abs(x)) // we need to determine whether we hit a "vertical" or a "horizontal" wall (w.r.t the map)
                 {
                     tex = y*TILE_SIZE;
-                    wolfTextures.SetColorMod(128, 128, 128);
                 }
 
                 if (tex < 0) // do not forget x_texcoord can be negative, fix that
@@ -320,10 +359,16 @@ int main(int argc, char* argv[])
 
                 tex += (map[wall.x][wall.y] * TILE_SIZE); // get proper texture according on what wall on map
 
+                if (fogEnabled)
+                {
+                    SetColorToFog(wolfTextures, wall.distance);
+                }
+
                 sdl2::Rect srcrect(static_cast<int>(tex), 0, 1, wolfTextures.Height());
                 renderer.Copy(wolfTextures, srcrect, slice);
 
                 wolfTextures.SetColorMod(255, 255, 255);
+                wolfTextures.AlphaMod(255);
                 
                 // floor casting
                 int px = slice.x;
@@ -331,6 +376,11 @@ int main(int argc, char* argv[])
                 {
                     float p = py - (PLANE_HEIGHT / 2);
                     float rowDist = ((float(DISTANCE_TO_PLANE) ) / (p)) / cos(angle - player.angle);
+
+                    if (fogEnabled)
+                    {
+                        SetColorToFog(wolfTextures, rowDist);
+                    }
 
                     float floorX = (player.pos.x + cos(angle) * rowDist);
                     float floorY = (player.pos.y + sin(angle) * rowDist);
@@ -352,11 +402,13 @@ int main(int argc, char* argv[])
                     sdl2::Rect srcc(ctx, fty, slice.w, 1);
                     sdl2::Rect dstc(slice.x, cy, slice.w, 1);
 
-                    wolfTextures.SetColorMod(128, 128, 128);
+                    // wolfTextures.SetColorMod(128, 128, 128);
                     renderer.Copy(wolfTextures, srcc, dstc);
-                    wolfTextures.SetColorMod(255, 255, 255);
+                    // wolfTextures.SetColorMod(255, 255, 255);
                     renderer.Copy(wolfTextures, srcf, dstf);
                 }
+                wolfTextures.SetColorMod(255, 255, 255);
+                wolfTextures.AlphaMod(255);
             }
 
             for (int i = 0; i < SPRITE_COUNT; i++)
@@ -406,6 +458,11 @@ int main(int argc, char* argv[])
                     int screenStartX = drawStartX;
                     if ((drawStartX >= 0 && drawStartX <= PLANE_WIDTH) || (drawEndX >= 0 && drawEndX <= PLANE_WIDTH))
                     {
+                        if (fogEnabled)
+                        {
+                            SetColorToFog(entityTexture, entities[i].second, true);
+                        }
+
                         if (drawStartX < 0)
                         {
                             texStartX = (0 - screenStartX) * texStepX;
@@ -435,6 +492,8 @@ int main(int argc, char* argv[])
                         }
                     }
                 }
+                entityTexture.SetColorMod(255, 255, 255);
+                entityTexture.AlphaMod(255);
             }
 
             while(SDL_PollEvent(&e))
