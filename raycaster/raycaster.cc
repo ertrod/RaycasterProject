@@ -58,7 +58,7 @@ const int HALF_PLANE_WIDTH = PLANE_WIDTH/2;
 
 const int TILE_SIZE = 64;
 
-const int PLAYER_FOV = 90;
+const int PLAYER_FOV = 60;
 const int PLAYER_HEIGHT = 32;
 
 const int DISTANCE_TO_PLANE = PLANE_WIDTH / 2;
@@ -77,19 +77,19 @@ const int MAX_RAY_DISTANCE = 24;
 
 const int PLAYER_SPEED = 10.;
 
-const int MOUSE_MOTION_MULTIPLIER = 2.5;
 const int MOUSE_MOTION_SPEED = 6.1;
+const int MOUSE_MOTION_MULTIPLIER = 2.5;
 
 // World map
 int map[MAP_HEIGHT][MAP_WIDTH] = {
-    {1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1},
+    {1, 2, 1, 2, 1, 1, 1, 2, 2, 1, 2, 1, 2, 1, 2, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 4, 0, 4, 4, 4, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 4, 0, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0},
+    {1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1, 0, 1},
     {1, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -97,6 +97,44 @@ int map[MAP_HEIGHT][MAP_WIDTH] = {
     {1, 0, 3, 3, 3, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 3, 0, 3, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+    {1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1},
+};
+
+int floorMap[MAP_HEIGHT][MAP_WIDTH] = {
+    {1, 2, 1, 2, 1, 1, 1, 2, 2, 1, 2, 1, 2, 1, 2, 1},
+    {1, 0, 1, 3, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 0, 3, 1, 1, 0, 0, 0, 2, 1, 3, 4, 2, 3, 1},
+    {1, 0, 3, 3, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 0, 3, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1},
+};
+
+int ceilMap[MAP_HEIGHT][MAP_WIDTH] = {
+    {1, 2, 1, 2, 1, 1, 1, 2, 2, 1, 2, 1, 2, 1, 2, 1},
+    {1, 0, 10, 10, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 0, 3, 1, 1, 0, 0, 0, 2, 1, 3, 4, 2, 3, 1},
+    {1, 0, 3, 3, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 0, 10, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 10, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
+    {1, 1, 1, 2, 1, 1, 1, 2, 1, 2, 1, 3, 4, 2, 3, 1},
     {1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1},
 };
 
@@ -229,11 +267,11 @@ int DeltaTime(int previous, int offset)
 
 // fog variables
 bool fogEnabled = true;
-int fogMaxDistance = 5;
+int fogMaxDistance = 12;
 float fogColorStep = 1. / fogMaxDistance;
-int fogRed = 10;
-int fogGreen = 50;
-int fogBlue = 30;
+int fogRed = 255;
+int fogGreen = 255;
+int fogBlue = 255;
 
 void SetColorToFog(sdl2::Texture& tex, float distance, bool isEntity = false)
 {
@@ -269,7 +307,7 @@ void SetColorToFog(sdl2::Texture& tex, float distance, bool isEntity = false)
 int main(int argc, char* argv[])
 {
     InitPlayer();
-    std::cout << player.angle << std::endl;
+
     try
     {
         sdl2::SDL sdl(SDL_INIT_VIDEO);
@@ -336,6 +374,8 @@ int main(int argc, char* argv[])
                 Intersection wall = ClosestHitPoint(angle, player.pos);
                 zBuffer[i] = wall.distance;
 
+                // use plane width to calculate slice size 
+                // it corrects wall to be a square, not rectangle
                 int sliceSize = int(PLANE_WIDTH/ wall.distance);
                 int sliceX = i;
                 int sliceY = PLANE_HEIGHT/2 - sliceSize/2;
@@ -357,7 +397,7 @@ int main(int argc, char* argv[])
                     tex += TILE_SIZE;
                     
 
-                tex += (map[wall.x][wall.y] * TILE_SIZE); // get proper texture according on what wall on map
+                tex += (map[wall.y][wall.x] * TILE_SIZE) - TILE_SIZE; // get proper texture according on what wall on map
 
                 if (fogEnabled)
                 {
@@ -374,8 +414,8 @@ int main(int argc, char* argv[])
                 int px = slice.x;
                 for (int py = slice.y+slice.h; py <= PLANE_HEIGHT; py++)
                 {
-                    float p = py - (PLANE_HEIGHT / 2);
-                    float rowDist = ((float(DISTANCE_TO_PLANE) ) / (p)) / cos(angle - player.angle);
+                    float p = py - (PLANE_HEIGHT / 2)+1;
+                    float rowDist = (float(DISTANCE_TO_PLANE) / (p)) / cos(angle - player.angle);
 
                     if (fogEnabled)
                     {
@@ -388,10 +428,12 @@ int main(int argc, char* argv[])
                     int cellX = static_cast<int>(floorX);
                     int cellY = static_cast<int>(floorY);
 
-                    int ftx = (int(floorTexture + TILE_SIZE * (floorX - cellX)));
+                    //std::cout << floorMap[cellX][cellY] << std::endl;
+                    
+                    int ftx = (int((TILE_SIZE * floorMap[cellY][cellX]) + TILE_SIZE * (floorX - cellX)));
                     int fty = (int(TILE_SIZE * (floorY - cellY)));
 
-                    int ctx = (int(ceilTexture + TILE_SIZE * (floorX - cellX)));
+                    int ctx = (int((TILE_SIZE * ceilMap[cellY][cellX])) + TILE_SIZE * (floorX - cellX));
 
                     
                     sdl2::Rect srcf(ftx, fty, slice.w, 1);
@@ -444,7 +486,6 @@ int main(int argc, char* argv[])
 
                     int spriteScreenY = (PLANE_HEIGHT/2 - spriteHeight/2);
                     float spriteScreenX = (spriteDir - player.angle) * (float(PLANE_WIDTH) / player.fov) + float(PLANE_WIDTH/2);
-
 
                     int drawStartX = spriteScreenX - spriteHeight/2;
                     int drawEndX = drawStartX + spriteHeight;
