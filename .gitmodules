@@ -4,3 +4,6 @@
 [submodule "SDL2wrapper"]
 	path = SDL2wrapper
 	url = https://github.com/ertrod/SDL2wrapper
+[submodule "modules/SDL2wrapper"]
+	path = modules/SDL2wrapper
+	url = https://github.com/ertrod/SDL2wrapper
