@@ -1,0 +1,30 @@
+bazel_dep(
+  name = "raycaster",
+  version = "0.0.1",
+)
+local_path_override(
+  module_name = "raycaster",
+  path = "raycaster"
+)
+
+bazel_dep(
+  name = "googletest",
+  version = "1.14.0",
+)
+
+bazel_dep(
+  name = "sdl",
+  version = "2.0.0",
+)
+bazel_dep(
+  name = "sdl2wrapper",
+  version = "0.1.0",
+)
+
+[local_path_override(
+  module_name = name,
+  path = "modules/" + name,
+) for name in (
+  "sdl",
+  "sdl2wrapper",
+)]

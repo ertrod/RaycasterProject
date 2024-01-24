@@ -1,4 +1,4 @@
 .vscode
 build-bin
 bazel-*
-libs/SDL2*
+modules/sdl/SDL2*

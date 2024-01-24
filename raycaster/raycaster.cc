@@ -4,7 +4,7 @@
 #include <algorithm>
 
 
-#include "libs/SDL2/include/SDL.h"
+#include "SDL2/include/SDL.h"
 #include "SDL2wrapper/include/SDL2wrapper.h"
 
 
