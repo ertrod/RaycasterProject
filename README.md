@@ -1,6 +1,7 @@
 # Simple C++ Raycaster
 
-This project is build using [Bazel](https://github.com/bazelbuild/bazel).
+This project is build using [Bazel](https://github.com/bazelbuild/bazel) and bzlmod build configs.
+Also this project is build with msvc compiler.
 
 # Dependencies
 
